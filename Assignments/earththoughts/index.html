@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="favicon.ico">
+
+    <title>Eerththoughts</title>
+
+    <!-- Bootstrap core CSS -->
+    <script src="js/jquery-3.2.1.min.js"></script>
+    <script src="js/popper.min.js"></script>
+	<script src="js/popper.js"></script>
+    
+    <script src="js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/custom.css">
+    <!-- Custom styles for this template -->
+    <link href="css/jumbotron-narrow.css" rel="stylesheet">
+
+
+	<style>
+		#main_image {
+			background-image: url("https://i.redd.it/fsipwrv7fgkz.jpg");
+			background-color: #17234E;
+			margin-bottom: 0;`enter code here`
+			min-height: 50%;
+			background-repeat: no-repeat;
+			background-position: center;
+			-webkit-background-size: cover;
+			background-size: cover;
+		}
+	</style>
+  </head>
+
+  <body>
+
+    <div class="container">
+      <div class="header clearfix">
+        <h3 class="text-muted">Earththoughts</h3>
+      </div>
+
+      <div class="jumbotron" id="main_image">
+        <p class="lead" id = "quote">Cras justo odio, dapibus ac facilisis in, egestas eget quam. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
+      </div>
+	  
+	  <br>
+	  
+	  <FORM>
+		<INPUT TYPE="button" class="btn btn-lg btn-success" onClick="history.go(0)" VALUE="Get Another">
+	  </FORM>
+
+	  <br>
+	  
+      <footer class="footer">
+        <p>&copy; 2017 CMPS 4443</p>
+      </footer>
+
+    </div> <!-- /container -->
+
+
+    <script>
+		//get random image
+        $(function() {
+            console.log( "ready!" );
+            $.get( "http://localhost:5050/get_image", function( data ) {
+            
+                console.log(data.url)
+                $('#main_image').css('background-image','url('+data.url+')');
+            });
+        });
+		
+		//get random quote
+        $(function() {
+            console.log( "ready!" );
+            $.get( "http://localhost:5050/get_quote", function( data ) {
+            
+                console.log(data.quote)
+                document.getElementById("quote").innerHTML = data.quote;
+				document.getElementById("quote").style.color = "white";
+            });
+        });
+    </script>
+	
+
+	
+  </body>
+</html>
