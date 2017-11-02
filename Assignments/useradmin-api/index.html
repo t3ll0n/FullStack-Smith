@@ -56,7 +56,7 @@
         //data.DT_RowId gives the required ID.
         function delete_users() {
             $.ajax({
-                url: "http://104.236.8.2/api.php/user/",
+                url: "http://104.236.8.2/useradmin/api.php/user/",
                 type: 'DELETE',
                 success: function(data) {
                     console.log(data);
@@ -68,7 +68,7 @@
         }
         function get_users() {
             $.ajax({
-                url: "http://104.236.8.2/api.php/user/",
+                url: "http://104.236.8.2/useradmin/api.php/user/",
                 type: 'GET',
                 success: function(data) {
                     load_data_tables(data);
