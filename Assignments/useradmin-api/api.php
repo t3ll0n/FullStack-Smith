@@ -56,6 +56,7 @@ abstract class API
         
         $this->logger->do_log($this->args);
         
+        //fix to no end-point error, because it wasn'y looking for the folder originally
         while ($this->args[0] == '' || $this->args[0] == 'api.php'|| $this->args[0] == 'useradmin') {
             array_shift($this->args);
         }
@@ -142,8 +143,18 @@ class MyAPI extends API
         $this->mh->setDbcoll('users');
         $this->temparray = [];
     }
+    
+    
     /**
-     * Example of an Endpoint
+     *  @name: random_user:
+     *  @description: retreives a random user(s) from the randomuser api
+     *  @type: GET
+     *  This will also filter the data so that only the values we need are in the collection, and all top level keys with no nesting.
+     *  E.g.  
+     *  Example:
+     *  { 
+     *     TBD in class
+     *  }
      */
     protected function random_user()
     {
@@ -172,6 +183,8 @@ class MyAPI extends API
         }
         return $results;
     }
+
+    
     private function flatten_array($array){
         foreach($array as $key => $value){
             //If $value is an array.
@@ -184,62 +197,120 @@ class MyAPI extends API
             }
         }
     }
-    
+
+
+     /**
+      * @name: add_user
+      * @description: add(s) a new user(s) to the collection
+      * @type: POST
+      *
+      * The posted data will be a json array of 1-N new users
+      * Example:
+      * {
+
+      * }
+      */
+      protected function add_user()
+      {
+          $this->mh->setDbcoll('users');
+          if ($this->method == "POST"){
+              //not good implementation right now
+              if(array_key_exists('data',$this->request)){
+                  if(is_array($this->request['data'])){
+                      $this->request = $this->request['data'];
+                      //had issues with "posting" so I'm debugging here
+                      if(!$this->has_string_keys($this->request)){
+                          $this->request = $this->addPrimaryKey($this->request,$this->primary_key);
+                          $max_id = $this->mh->get_max_id($this->mdb, $this->mh->collection, '_id');
+                          $this->request['_id'] = $max_id;
+                          $result = $this->mh->insert([$this->request]);
+                      }else{
+                          $max_id = $this->mh->get_max_id($this->mdb, $this->mh->collection, '_id');
+                          $this->request['_id'] = $max_id;
+                          $result = $this->mh->insert([$this->request]);
+                      }
+                  }
+              }else{
+                  if(!isset($_GET['_id'])){
+                      $max_id = $this->mh->get_max_id($this->mdb, $this->mh->collection, '_id');
+                      $this->request['_id'] = $max_id;
+                  }
+                  $result = $this->mh->insert([$this->request]);
+                  return $result;
+              }
+          }
+      }
+
+      /**
+      * @name: update_user
+      * @description: updates user information in the collection
+      * @type: PUT
+      *
+      * The posted data will be a json array of 1-N new users
+      * Example:
+      * {
+
+      * }
+      */
+      protected function update_user()
+      {
+          $this->mh->setDbcoll('users');
+          if ($this->method == "POST"){
+              if(gettype($this->request["_id"])!="integer")
+              {
+                  $this->request["_id"] = (int)$this->request["_id"];
+              }
+              $this->mh->update(["_id" => $this->request["_id"]], $this->request);
+          }
+          return $this->request["_id"];
+      }
+  
+
     /**
-     *add_user: adds a new user(s) to the collection
+     *  @name: delete_user
+     *  @description: deletes a user(s) from the collection
+     *  @type: DELETE
+     *  E.g.  
+     *  Example:
+     *  { 
+     *     TBD in class
+     *  }
      */
-    protected function add_user()
-    {
-		$this->mh->setDbcoll('users');
-		
-       if ($this->method == "POST") {
-		   
-			$max_id = $this->mh->get_max_id($this->mdb, $this->mh->collection, '_id');
-			$user = $this->request;
-			$user['_id'] = $max_id;
-			$results = $this->mh->insert([$user]);
-		   
-        } 
-		return $result;
-    }
-    /**
-     *update_user: updates a user(s) in the collection
-     */
-    protected function update_user()
-    {
-		$this->mh->setDbcoll('users');
-		if ($this->method == "POST") {
-          
-			$this->request['_id'] = (int)$this->request['_id'];
-			$_id = (int)$this->request['_id'];
-			$doc['_id'] = $_id;
-			$results = $this->mh->update($doc, $this->request, null);
-			
-			return $results; 
-        }
-		
-    }
-    /**
-     *delete_user: removes a user(s) from the collection
-     */
-    protected function delete_user()
-    {
-		$this->mh->setDbcoll('users');
-		if ($this->method == "DELETE") {
-            if (count($this->request) > 0) {
+    protected function delete_user(){
+        $this->mh->setDbcoll('users');
+        
+        if ($this->method == "DELETE") {
+            $this->logger->do_log($this->request);
+
+            if(count($this->request) > 0){
+                if(isset($_GET['_id']))
+                {
+                    if(gettype($this->request["_id"])!="integer")
+                    {
+                        $this->request["_id"] = (int)$this->request["_id"];
+                    }
+                }
                 $result = $this->mh->delete([$this->request]);
-            } else {
+            }
+            else{
                 $result = $this->mh->delete();
             }
             return $result;
         }
     }
+
     /**
-     *find_user: finds a user(s) from the collection
+     *
+     *  @name: find_user:
+     *  @description: finds a user(s) in the collection
+     *  @type: GET
+     *  E.g.  
+     *  Example:
+     *  { 
+     *     TBD in class
+     *  }
      */
-    protected function find_user()
-    {
-        
+    protected function find_user(){
         $newstuff = [];
         foreach($this->request as $key => $val){
             $newstuff[$key] = $this->clean_entry($val);
@@ -247,10 +318,12 @@ class MyAPI extends API
         return $this->mh->query($newstuff);
         //return ["request"=>$newstuff,"method"=>$this->method];
     }
+
     private function clean_entry($entry){
         return stripslashes(strip_tags(urldecode($entry)));
     }
-    /**
+
+    /* 
      *All things user.
      */
     protected function user()
@@ -322,4 +395,9 @@ class MyAPI extends API
 }
 $api = new MyAPI();
 echo $api->processAPI();
+
 exit;
+
+ 
+ 
+ 
