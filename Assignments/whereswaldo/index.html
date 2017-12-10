@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Where's Waldo</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	<link rel="shortcut icon" href="">
+
+    <!-- Custom styles for this template -->
+    <link href="./css/the-big-picture.css" rel="stylesheet">
+    <link href="./css/magnifier.css" rel="stylesheet">
+    <style>
+        body {
+            /* background: url('./images/1.jpg') no-repeat center center fixed; */
+            /* -webkit-background-size: cover;
+            -moz-background-size: cover;
+            background-size: cover;
+            -o-background-size: cover; */
+            /* background-size: contain; */
+        }
+        
+        #thumb {
+            width: 1024px;
+            height: 800px;
+			margin-bottom: 100px;
+        }
+
+        #time {
+            font-size: 500%;
+            margin-left: 20px;
+            font-weight: bold;
+        }
+
+        .mycenter {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #reset{
+            margin-left: 10px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-bottom">
+        <div class="container">
+            <a class="navbar-brand" href="#">Where's Waldo?</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <button id="start_pause_resume" class="btn btn-success">Start Game</button>
+                    </li>
+                    <li class="nav-item">
+                        <button id="reset" class="btn btn-danger">Reset Game</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Content -->
+    <div id="time">
+        <span id="hours">00</span>:
+        <span id="minutes">00</span>:
+        <span id="seconds">00</span>:
+        <span id="milliseconds">000</span>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col"></div>
+            <div class="col-12 col-md-auto mycenter">
+                <img src="./images/crowd.jpg" id="thumb">
+            </div>
+            <div class="col col-lg-2"></div>
+        </div>
+    </div>
+
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="./js/jquery.min.js"></script>
+    <script src="./js/bootstrap.bundle.min.js"></script>
+    <script src="./js/Event.js"></script>
+    <script src="./js/Magnifier.js"></script>
+    <script>
+        var tbdiv;
+        var hours = minutes = seconds = milliseconds = 0;
+        var prev_hours = prev_minutes = prev_seconds = prev_milliseconds = undefined;
+        var timeUpdate;
+        var gameboard;
+		var userx = usery = 0;
+        
+        var evt = new Event();
+        var m = new Magnifier(evt);
+		
+        tbdiv = document.getElementById('thumb'); //waldo image id
+		
+		//function to get image created by make_game_board()
+		load_waldo();
+		function load_waldo()
+		{
+            $.ajax({
+                url: "http://104.236.8.2/waldo/api/api.php/get_waldoImage",
+                type: 'GET',
+                success: function(data) {
+					var i = getRandomNumberBetween(0,data.length-1);
+					gameboard = data[i].game_id;
+            
+					//set img src for thumb as path to waldo image
+					tbdiv.src = "./game_images/" + data[i].game_id + "." + data[i].img_type;
+                },
+                data: []
+            });
+		}
+
+        
+        blur(tbdiv,10); //call blur function
+		
+		//gets a random int between 0 and number of game_boards in db
+		function getRandomNumberBetween(start,end){
+			return Math.floor(Math.random()*(end-start+1))+start;
+		}
+		
+		//gets the x and y positions of muse clicks on the game board
+		$("#thumb").click(function(e) {
+
+			var offset = $(this).offset();
+			userx = Math.round(e.pageX - offset.left);
+			usery = Math.round(e.pageY - offset.top);
+
+            console.log("User clicked at position x="+userx + " y="+usery);
+
+            var document = {
+                'game_id':gameboard,
+                'x':userx,
+                'y':usery
+            }
+
+            //call route in api to query actual waldo location
+            $.ajax({
+                url: "http://104.236.8.2/waldo/api/api.php/get_waldoLocation",
+                type: 'GET',
+                success: function(data) {
+					giveAlerts(data);
+                },
+                data: document
+            });
+		});
+		
+		//gets distance between db waldo and user mouse click
+		function giveAlerts(data)
+		{
+			if(data == "found")
+			{
+				alert("Found Him!");
+				if(confirm)
+				{
+					window.location.href = "http://104.236.8.2/waldo/"; //reload game because they won
+				}
+			}
+			
+			else
+				alert("Wrong! Try Again...");
+		}
+
+
+        //function to unblur image, start clock when start clicked
+        $('#start_pause_resume').click(function(){
+            blur(tbdiv,0);
+            updateTime(0,0,0,0);
+        })
+
+        // Reset button onClick
+        $("#reset").button().click(function(){
+            if(timeUpdate) clearInterval(timeUpdate);
+                setStopwatch(0,0,0,0);
+            blur(tbdiv,10); //call blur function      
+        });
+
+        //update the time
+        function updateTime(prev_hours, prev_minutes, prev_seconds, prev_milliseconds){
+            var startTime = new Date();    // fetch current time
+            
+            timeUpdate = setInterval(function () {
+                var timeElapsed = new Date().getTime() - startTime.getTime();    // calculate the time elapsed in milliseconds
+                
+                // calculate hours                
+                hours = parseInt(timeElapsed / 1000 / 60 / 60) + prev_hours;
+                
+                // calculate minutes
+                minutes = parseInt(timeElapsed / 1000 / 60) + prev_minutes;
+                if (minutes > 60) minutes %= 60;
+                
+                // calculate seconds
+                seconds = parseInt(timeElapsed / 1000) + prev_seconds;
+                if (seconds > 60) seconds %= 60;
+                
+                // calculate milliseconds 
+                milliseconds = timeElapsed + prev_milliseconds;
+                if (milliseconds > 1000) milliseconds %= 1000;
+                
+                // set the stopwatch
+                setStopwatch(hours, minutes, seconds, milliseconds);
+                
+            }, 25); // update time in stopwatch after every 25ms
+        
+        }
+
+        // Set the time in stopwatch
+        function setStopwatch(hours, minutes, seconds, milliseconds){
+            $("#hours").html(prependZero(hours, 2));
+            $("#minutes").html(prependZero(minutes, 2));
+            $("#seconds").html(prependZero(seconds, 2));
+            $("#milliseconds").html(prependZero(milliseconds, 3));
+        }
+
+        // Prepend zeros to the digits in stopwatch
+        function prependZero(time, length) {
+            time = new String(time);    // stringify time
+            return new Array(Math.max(length - time.length + 1, 0)).join("0") + time;
+        }
+
+
+        //blur image after it loads
+        function blur(elem,x){
+            var filterVal = 'blur('+x+'px)';
+
+            $(elem).css('filter', filterVal)
+            .css('webkitFilter', filterVal)
+            .css('mozFilter', filterVal)
+            .css('oFilter', filterVal)
+            .css('msFilter', filterVal);
+        }
+
+        $(".mycenter").click(function(evt) {
+            console.log(evt);
+        });
+
+        
+    </script>
+
+</body>
+
+</html>
